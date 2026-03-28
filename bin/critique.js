@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { resolve, basename } from "path";
-import { mkdir, readFile, writeFile, readdir, rm, stat } from "fs/promises";
+import { mkdir, readFile, writeFile, readdir, rm, stat, access } from "fs/promises";
 import { getCritiqueRoles, loadRole, loadAllRoles } from "../lib/roles.js";
 import { buildContext } from "../lib/context.js";
 import { runAgent, runRoundtable } from "../lib/agent.js";
@@ -16,6 +16,23 @@ const c = {
   bold: (s) => `\x1b[1m${s}\x1b[0m`,
   dim: (s) => `\x1b[2m${s}\x1b[0m`,
 };
+
+async function ensureGitignore(projectPath) {
+  const gitignorePath = resolve(projectPath, ".gitignore");
+  let content = "";
+  try {
+    content = await readFile(gitignorePath, "utf-8");
+  } catch {
+    // no .gitignore yet
+  }
+
+  if (content.split("\n").some((line) => line.trim() === ".critique" || line.trim() === ".critique/")) {
+    return; // already covered
+  }
+
+  const newline = content.length > 0 && !content.endsWith("\n") ? "\n" : "";
+  await writeFile(gitignorePath, content + newline + ".critique/\n");
+}
 
 const [, , command, ...args] = process.argv;
 
@@ -88,6 +105,7 @@ async function cmdReview(projectArg) {
   const projectPath = resolve(projectArg || ".");
   const outputDir = resolve(projectPath, ".critique");
   await mkdir(outputDir, { recursive: true });
+  await ensureGitignore(projectPath);
 
   const roles = await getCritiqueRoles();
   const name = basename(projectPath);
@@ -192,6 +210,7 @@ async function cmdSolo(roleSlug, projectArg) {
   const projectPath = resolve(projectArg || ".");
   const outputDir = resolve(projectPath, ".critique");
   await mkdir(outputDir, { recursive: true });
+  await ensureGitignore(projectPath);
 
   let role;
   try {
