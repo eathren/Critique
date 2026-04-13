@@ -115,26 +115,29 @@ async function cmdReview(projectArg) {
 
   const context = await buildContext(projectPath);
 
-  console.log(c.dim(`Running ${roles.length} agents in parallel...\n`));
+  console.log(c.dim(`Running ${roles.length} agents sequentially...\n`));
 
-  const results = await Promise.allSettled(
-    roles.map(async (role) => {
-      const label = `${role.emoji}  ${role.name}`;
-      console.log(`${c.blue("⟳")} ${label} ${c.dim(`(${role.slug})`)}`);
-      try {
-        const output = await runAgent(role, context, projectPath);
-        await writeFile(resolve(outputDir, `${role.slug}.md`), output);
-        console.log(`${c.green("✓")} ${label} → ${c.dim(`.critique/${role.slug}.md`)}`);
-        return { slug: role.slug, output };
-      } catch (err) {
-        console.log(`${c.red("✗")} ${label} — ${c.dim(err.message)}`);
-        throw err;
-      }
-    })
-  );
+  let succeeded = 0;
+  let failed = 0;
 
-  const succeeded = results.filter((r) => r.status === "fulfilled").length;
-  const failed = results.filter((r) => r.status === "rejected").length;
+  for (const role of roles) {
+    const label = `${role.emoji}  ${role.name}`;
+    console.log(`${c.blue("⟳")} ${label} ${c.dim(`(${role.slug})`)}`);
+
+    try {
+      let started = false;
+      const output = await runAgent(role, context, projectPath, (chunk) => {
+        if (!started) started = true;
+        process.stdout.write(chunk);
+      });
+      await writeFile(resolve(outputDir, `${role.slug}.md`), output);
+      console.log(`\n${c.green("✓")} ${label} → ${c.dim(`.critique/${role.slug}.md`)}\n`);
+      succeeded++;
+    } catch (err) {
+      console.log(`${c.red("✗")} ${label} — ${c.dim(err.message)}\n`);
+      failed++;
+    }
+  }
 
   console.log();
   if (failed === 0) {
