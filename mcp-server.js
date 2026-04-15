@@ -6,7 +6,8 @@ import { z } from "zod";
 import { resolve, basename } from "path";
 import { mkdir, readFile, writeFile, readdir, rm, stat } from "fs/promises";
 import { buildContext } from "./lib/context.js";
-import { getCritiqueRoles, loadRole, loadAllRoles } from "./lib/roles.js";
+import { loadAllRoles } from "./lib/roles.js";
+import { ensureGitignore } from "./lib/gitignore.js";
 
 const server = new McpServer({
   name: "critique",
@@ -50,20 +51,15 @@ server.tool(
     content: z.string().describe("The critique content to save"),
   },
   async ({ project_path, role, content }) => {
+    // Validate role slug to prevent path traversal
+    if (!/^[a-z0-9-]+$/.test(role)) {
+      return { content: [{ type: "text", text: `Invalid role slug: ${role}. Must be lowercase alphanumeric with hyphens.` }] };
+    }
+
     const projectPath = resolve(project_path);
     const outputDir = resolve(projectPath, ".critique");
     await mkdir(outputDir, { recursive: true });
-
-    // Ensure .gitignore covers .critique/
-    const gitignorePath = resolve(projectPath, ".gitignore");
-    let gitignore = "";
-    try {
-      gitignore = await readFile(gitignorePath, "utf-8");
-    } catch {}
-    if (!gitignore.split("\n").some((l) => l.trim() === ".critique" || l.trim() === ".critique/")) {
-      const nl = gitignore.length > 0 && !gitignore.endsWith("\n") ? "\n" : "";
-      await writeFile(gitignorePath, gitignore + nl + ".critique/\n");
-    }
+    await ensureGitignore(projectPath);
 
     const filePath = resolve(outputDir, `${role}.md`);
     await writeFile(filePath, content);
@@ -110,9 +106,9 @@ server.tool(
     const outputDir = resolve(projectPath, ".critique");
     const roles = await loadAllRoles();
 
-    let files;
+    // Check if critique directory exists
     try {
-      files = await readdir(outputDir);
+      await readdir(outputDir);
     } catch {
       return { content: [{ type: "text", text: `No critiques yet for ${basename(projectPath)}` }] };
     }
