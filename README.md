@@ -136,10 +136,23 @@ Once registered, these tools become available:
 |------|-------------------|
 | **Tech Reviewer** | Performance, reliability, scaling — through a product lens |
 | **Software Engineer** | Code quality, architecture, maintainability, testing |
+| **QA Engineer** | Test coverage, edge cases, regression risks, test strategy |
 | **Performance Engineer** | Speed, efficiency, bottlenecks, scaling concerns |
 | **DevOps Engineer** | CI/CD, deployment, monitoring, operational readiness |
+| **API Designer** | REST/GraphQL consistency, versioning, developer experience |
+| **Data Engineer** | Analytics instrumentation, event tracking, data pipeline readiness |
 | **Cybersecurity Auditor** | Vulnerabilities, auth, injection flaws, dependency risks |
 | **Privacy Officer** | Data collection, GDPR/CCPA compliance, third-party sharing |
+| **Legal Reviewer** | Licensing, compliance, ToS, attribution requirements |
+
+### Web & Mobile
+
+| Role | What they evaluate |
+|------|-------------------|
+| **SEO Specialist** | Meta tags, structured data, crawlability, Core Web Vitals |
+| **i18n Specialist** | Hardcoded strings, locale handling, RTL support, translation readiness |
+| **Mobile Specialist** | Responsive design, touch targets, mobile performance, PWA |
+| **Technical Writer** | README quality, API docs, getting started guides, code comments |
 
 ## How It Works
 
